@@ -1,32 +1,83 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "crypto";
 
 export type Task = {
   id: string
   title: string
   content: string
+  finished: boolean
+  created_at: Date
+}
+
+type CreateTask = {
+  title: string
+  content: string
+}
+
+type UpdateTask = {
+  taskId: string
+  title?: string
+  content?: string
 }
 
 @Injectable()
 export class TaskService {
-  tasks: Task[] = []
+  tasks: Task[] = [
+    {
+      id: randomUUID(),
+      title: "Lorem ipsum dolor sit amet",
+      content: "Lorem ipsum dolor sit amet",
+      finished: false,
+      created_at: new Date()
+    }
+  ]
 
   listTasks(): Task[] {
     return this.tasks
   }
 
-  createTask({ title, content }: { title: string; content: string }): void {
+  getTask(taskId: string): Task {
+    const task = this.tasks.find(task => task.id === taskId)
+
+    if (!task) {
+      throw new NotFoundException("Tarefa não encontrada")
+    }
+
+    return task
+  }
+
+  createTask({ title, content }: CreateTask): void {
     const task: Task = {
       id: randomUUID(),
       title,
-      content
+      content,
+      created_at: new Date,
+      finished: false
     }
 
     this.tasks.push(task)
   }
 
-  delete(taskId: string): void {
-    const findTaskById = this.tasks.filter(task => task.id !== taskId);
-    this.tasks = [...findTaskById]
+  updateTask({ title, content, taskId }: UpdateTask): void {
+    this.tasks = this.tasks.map(task => {
+      return task.id === taskId ? {
+        ...task,
+        title: title ? title : task.title,
+        content: content ? content : task.content
+      } : task
+    })
+  }
+
+  finishTask(taskId: string): void {
+    this.tasks = this.tasks.map(task => {
+      return task.id === taskId ? {
+        ...task,
+        finished: true
+      } : task
+    })
+  }
+
+  deleteTask(taskId: string): void {
+    this.tasks = this.tasks.filter(task => task.id !== taskId);
   }
 }
